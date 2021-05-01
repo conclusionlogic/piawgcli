@@ -32,10 +32,7 @@ type Pinger interface {
 }
 
 func NewPinger() Pinger {
-	return pingerImpl{
-		pingUnix: unixPingerImpl{},
-		pingWin:  windowsPingerImpl{},
-	}
+	return newPinger(unixPingerImpl{}, windowsPingerImpl{})
 }
 
 func newPinger(unix unixPinger, win windowsPinger) Pinger {
