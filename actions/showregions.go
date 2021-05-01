@@ -23,7 +23,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/korovkin/limiter"
+	"github.com/jamesrr39/semaphore"
 	"gitlab.com/ddb_db/piawgcli/context"
 	"gitlab.com/ddb_db/piawgcli/utils/net"
 	"gitlab.com/ddb_db/piawgcli/utils/os"
@@ -131,14 +131,16 @@ func (action showRegionsAction) extractJsonBody(payload string) []byte {
 }
 
 func (action showRegionsAction) pingRegions(regions []piaRegion) {
-	pool := limiter.NewConcurrencyLimiter(int(action.cmd.Threads))
+	sem := semaphore.NewSemaphore(uint(action.cmd.Threads))
 	for i := range regions {
 		offset := i
-		pool.Execute(func() {
+		sem.Add()
+		go func() {
+			defer sem.Done()
 			regions[offset] = action.doPing(regions[offset])
-		})
+		}()
 	}
-	pool.Wait()
+	sem.Wait()
 }
 
 func (action showRegionsAction) isMatch(r piaRegion) bool {

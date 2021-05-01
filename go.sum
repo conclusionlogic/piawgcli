@@ -2,8 +2,8 @@ github.com/alecthomas/kong v0.2.16 h1:F232CiYSn54Tnl1sJGTeHmx4vJDNLVP2b9yCVMOQwH
 github.com/alecthomas/kong v0.2.16/go.mod h1:kQOmtJgV+Lb4aj+I2LEn40cbtawdWJ9Y8QLq+lElKxE=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/korovkin/limiter v0.0.0-20190919045942-dac5a6b2a536 h1:QwKnpk6xFW80HVFKqiIHTzK19UF62mRWejcUr/q6z4I=
-github.com/korovkin/limiter v0.0.0-20190919045942-dac5a6b2a536/go.mod h1:bttpekv26JrhFNCYlxnxn8a1jw8Q0gi8iHe0RC4JLBg=
+github.com/jamesrr39/semaphore v0.0.0-20180521202200-0d5ddc396086 h1:8SBBBfxXafiAtWOcxe2UvgxYcEV/25oIt7QtHhGFsTA=
+github.com/jamesrr39/semaphore v0.0.0-20180521202200-0d5ddc396086/go.mod h1:ydmQe8L14oRitm3xvfptp3pUdRn9C1pTQ2v4aKN5whQ=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
