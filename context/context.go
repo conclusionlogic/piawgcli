@@ -20,5 +20,5 @@ package context
 type Context struct {
 	ServerList    string
 	CaseSensitive bool
-	Debug         bool
+	Debug         uint8
 }

@@ -18,23 +18,30 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+
 	"github.com/alecthomas/kong"
 	"gitlab.com/ddb_db/piawgcli/actions"
 	"gitlab.com/ddb_db/piawgcli/context"
+	"k8s.io/klog/v2"
 )
 
 var cli struct {
 	CaseSensitive bool                   `help:"case sensitive searching" default:"1" negatable`
-	Debug         bool                   `help:"debug mode"`
+	Debug         uint8                  `help:"log verbosity; higher=more log output" short:"v" default:"0"`
 	ServerList    string                 `hidden help:"PIA server list source" default:"https://serverlist.piaservers.net/vpninfo/servers/v4"`
 	ShowRegions   actions.ShowRegionsCmd `cmd help:"Show available regions"`
 }
 
 func main() {
 	ctx := kong.Parse(&cli)
+	klog.InitFlags(nil)
+	flag.Set("v", fmt.Sprintf("%d", cli.Debug))
+	flag.Parse()
 	err := ctx.Run(&context.Context{
 		CaseSensitive: cli.CaseSensitive,
-		Debug:         cli.Debug,
+		Debug:         uint8(cli.Debug),
 		ServerList:    cli.ServerList})
 	ctx.FatalIfErrorf(err)
 }
