@@ -45,8 +45,7 @@ func (cmd *ShowRegionsCmd) Run(ctx *context.Context) error {
 		cmd:        cmd,
 		ctx:        ctx,
 	}
-	action.run()
-	return nil
+	return action.run()
 }
 
 type piaRegion struct {
@@ -127,6 +126,7 @@ func (action showRegionsAction) parseServerList() (piaRegions, error) {
 }
 
 func (action showRegionsAction) extractJsonBody(payload string) []byte {
+	// the endpoint pads the json response with a signature blob of some kind so we must extract out only the json data in the response
 	return []byte(payload[0 : strings.LastIndex(payload, "}")+1])
 }
 
