@@ -27,6 +27,7 @@ import (
 	"gitlab.com/ddb_db/piawgcli/context"
 	"gitlab.com/ddb_db/piawgcli/utils/net"
 	"gitlab.com/ddb_db/piawgcli/utils/os"
+	"k8s.io/klog/v2"
 )
 
 type ShowRegionsCmd struct {
@@ -73,9 +74,11 @@ func (action showRegionsAction) run() error {
 		return err
 	}
 	if len(cmd.Search) > 0 {
+		klog.V(5).Infof("applying region filter: %s", cmd.Search)
 		pia.Regions = action.filter(pia.Regions)
 	}
 	if cmd.Ping {
+		klog.V(5).Info("pinging regions")
 		action.pingRegions(pia.Regions)
 	}
 	action.sortRegions(pia.Regions)
@@ -100,15 +103,21 @@ func (action showRegionsAction) sortRegions(regions []piaRegion) {
 	sort.Slice(regions,
 		func(i, j int) bool {
 			if cmd.SortOrder != "asc" {
+				klog.V(5).Info("sort order: desc")
 				tmp := i
 				i = j
 				j = tmp
+			} else {
+				klog.V(5).Info("sort order: asc")
 			}
 			if cmd.Ping {
+				klog.V(5).Info("sort key: ping")
 				return regions[i].Ping < regions[j].Ping
 			} else if cmd.SortBy == "name" {
+				klog.V(5).Info("sort key: name")
 				return regions[i].Name < regions[j].Name
 			} else {
+				klog.V(5).Info("sort name: id")
 				return regions[i].Id < regions[j].Id
 			}
 		})
@@ -127,7 +136,11 @@ func (action showRegionsAction) parseServerList() (piaRegions, error) {
 
 func (action showRegionsAction) extractJsonBody(payload string) []byte {
 	// the endpoint pads the json response with a signature blob of some kind so we must extract out only the json data in the response
-	return []byte(payload[0 : strings.LastIndex(payload, "}")+1])
+	lastBrace := strings.LastIndex(payload, "}")
+	klog.V(4).Infof("last brace: %d", lastBrace)
+	body := []byte(payload[0 : lastBrace+1])
+	klog.V(4).Infof("region payload: %s", body[:70])
+	return body
 }
 
 func (action showRegionsAction) pingRegions(regions []piaRegion) {
@@ -140,6 +153,7 @@ func (action showRegionsAction) pingRegions(regions []piaRegion) {
 			regions[offset] = action.doPing(regions[offset])
 		}()
 	}
+	klog.V(4).Infof("waiting on ~%d workers", sem.CurrentlyRunning())
 	sem.Wait()
 }
 
@@ -155,15 +169,19 @@ func (action showRegionsAction) isMatch(r piaRegion) bool {
 		searchId = r.Id
 		searchPredicate = searchTerm
 	}
+	klog.V(4).Infof("n=%s, i=%s, p=%s", searchName, searchId, searchPredicate)
 	return strings.Contains(searchName, searchPredicate) || strings.Contains(searchId, searchPredicate)
 }
 
 func (action showRegionsAction) doPing(r piaRegion) piaRegion {
 	ping, err := action.pinger.Ping(r.Dns, action.cmd.Samples)
 	if err != nil {
+		klog.Errorf("ping failed: %s\n%v", r.Name, err)
 		ping = 10000
 	}
-	return piaRegion{Id: r.Id, Name: r.Name, Ping: ping, Dns: r.Dns}
+	region := piaRegion{Id: r.Id, Name: r.Name, Ping: ping, Dns: r.Dns}
+	klog.V(5).Infof("region pinged: %v", region)
+	return region
 }
 
 func (action showRegionsAction) filter(regions []piaRegion) []piaRegion {
@@ -171,6 +189,9 @@ func (action showRegionsAction) filter(regions []piaRegion) []piaRegion {
 	for _, r := range regions {
 		if action.isMatch(r) {
 			filtered = append(filtered, r)
+			klog.V(4).Infof("region %s: matched filter", r.Name)
+		} else {
+			klog.V(4).Infof("region %s: did not match filter", r.Name)
 		}
 	}
 	return filtered

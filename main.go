@@ -20,6 +20,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	"github.com/alecthomas/kong"
 	"gitlab.com/ddb_db/piawgcli/actions"
@@ -30,6 +31,7 @@ import (
 var cli struct {
 	CaseSensitive bool                   `help:"case sensitive searching" default:"1" negatable`
 	Debug         uint8                  `help:"log verbosity; higher=more log output" short:"v" default:"0"`
+	LogFile       string                 `help:"log output to file instead of stdout"`
 	ServerList    string                 `hidden help:"PIA server list source" default:"https://serverlist.piaservers.net/vpninfo/servers/v4"`
 	ShowRegions   actions.ShowRegionsCmd `cmd help:"Show available regions"`
 }
@@ -38,10 +40,25 @@ func main() {
 	ctx := kong.Parse(&cli)
 	klog.InitFlags(nil)
 	flag.Set("v", fmt.Sprintf("%d", cli.Debug))
+	if len(cli.LogFile) > 0 {
+		logFile := prepLogFile()
+		defer logFile.Close()
+		flag.Set("logtostderr", "false")
+		flag.Set("log_file", cli.LogFile)
+	}
+	defer klog.Flush()
 	flag.Parse()
 	err := ctx.Run(&context.Context{
 		CaseSensitive: cli.CaseSensitive,
 		Debug:         uint8(cli.Debug),
 		ServerList:    cli.ServerList})
 	ctx.FatalIfErrorf(err)
+}
+
+func prepLogFile() *os.File {
+	f, err := os.Create(cli.LogFile)
+	if err != nil {
+		klog.Fatalf("unable to create log file: %s", cli.LogFile)
+	}
+	return f
 }

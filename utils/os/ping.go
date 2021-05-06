@@ -65,27 +65,28 @@ func (p pingerImpl) Ping(host string, samples uint8) (uint16, error) {
 	var err error
 	switch runtime.GOOS {
 	case "windows":
-		klog.V(1).Info("PING: windows")
+		klog.V(4).Info("PING: windows")
 		duration, err = p.pingWin.ping(host, samples)
 	default:
-		klog.Infof("PING: unix [%s]", runtime.GOOS)
+		klog.V(4).Infof("PING: unix [%s]", runtime.GOOS)
 		duration, err = p.pingUnix.ping(host, samples)
 	}
 	if duration == 0 {
 		duration = 1
-		klog.V(1).Infof("%s: sub ms ping rounded up to 1ms", host)
+		klog.V(2).Infof("%s: sub ms ping rounded up to 1ms", host)
 	}
 	return duration, err
 }
 
 func (p windowsPingerImpl) ping(host string, samples uint8) (uint16, error) {
+	// TODO ping timeout should be configurable
 	ctx, cancel := context.WithTimeout(context.Background(), 5000*time.Millisecond)
 	defer cancel()
 	cmdline := []string{"ping", "-n", fmt.Sprint(samples), host}
-	klog.Infof("Executing command line: %v", cmdline)
 	cmd := exec.CommandContext(ctx, cmdline[0], cmdline[1:]...)
 	out, err := cmd.CombinedOutput()
-	klog.V(1).Infof("Output:\n%s", string(out))
+	klog.V(4).Infof("Executing command line: %v [rc=%d]", cmdline, cmd.ProcessState.ExitCode())
+	klog.V(5).Infof("Output:\n%s", string(out))
 	var ping uint16
 	if ctx.Err() != nil {
 		err = ctx.Err()
@@ -96,6 +97,9 @@ func (p windowsPingerImpl) ping(host string, samples uint8) (uint16, error) {
 			var val uint64
 			val, err = strconv.ParseUint(matches[1], 10, 16)
 			ping = uint16(val)
+		} else {
+			klog.Error("unable to find ping timings in output")
+			ping = 9999
 		}
 	}
 	return ping, err
@@ -104,8 +108,10 @@ func (p windowsPingerImpl) ping(host string, samples uint8) (uint16, error) {
 func (p unixPingerImpl) ping(host string, samples uint8) (uint16, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5000*time.Millisecond)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "ping", "-c", string(samples), host)
+	cmdline := []string{"ping", "-c", fmt.Sprint(samples), host}
+	cmd := exec.CommandContext(ctx, cmdline[0], cmdline[1:]...)
 	out, err := cmd.CombinedOutput()
+	klog.V(4).Infof("Executing command line: %v [rc=%d]", cmdline, cmd.ProcessState.ExitCode())
 	var ping uint16
 	if ctx.Err() != nil {
 		err = ctx.Err()
@@ -116,6 +122,9 @@ func (p unixPingerImpl) ping(host string, samples uint8) (uint16, error) {
 			var val uint64
 			val, err = strconv.ParseUint(matches[1], 10, 16)
 			ping = uint16(val)
+		} else {
+			klog.Error("unable to find ping timings in output")
+			ping = 9999
 		}
 	}
 	return ping, err
