@@ -111,7 +111,14 @@ func (clnt piaClientImpl) GetAuthToken(id string, pwd string, region PiaRegion) 
 		Get(url)
 	if err != nil {
 		err = fmt.Errorf("token fetch failed: %w", err)
+		return "", err
 	} else {
+		httpStatus := resp.StatusCode()
+		if httpStatus == 403 {
+			return "", fmt.Errorf("invalid PIA credentials")
+		} else if httpStatus < 200 || httpStatus > 299 {
+			return "", fmt.Errorf("invalid auth token response: %d", httpStatus)
+		}
 		klog.V(4).Info(resp.String())
 	}
 	var jsonResp struct {
@@ -123,7 +130,7 @@ func (clnt piaClientImpl) GetAuthToken(id string, pwd string, region PiaRegion) 
 		err = fmt.Errorf("json parse of auth token failed: %w", err)
 	}
 	if jsonResp.Status != "OK" {
-		err = fmt.Errorf("invalid auth token response: %s", jsonResp.Status)
+		err = fmt.Errorf("invalid auth token response: %s [%d]", jsonResp.Status, resp.StatusCode())
 	}
 	return jsonResp.Token, err
 }
