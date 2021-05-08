@@ -19,6 +19,8 @@ package actions
 
 import (
 	"fmt"
+	"io"
+	"strings"
 
 	"gitlab.com/ddb_db/piawgcli/internal/appstate"
 	"gitlab.com/ddb_db/piawgcli/internal/net/piaclient"
@@ -32,10 +34,12 @@ type CreateConfigCmd struct {
 
 func (cmd *CreateConfigCmd) Run(state *appstate.State) error {
 	pia := piaclient.New(state.ServerList)
-	r, err := pia.GetRegionById(cmd.PiaRegionId)
+	blob, err := pia.CreateTunnel(cmd.PiaId, cmd.PiaPassword, cmd.PiaRegionId)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Found region: %v", r)
+	json := new(strings.Builder)
+	_, _ = io.Copy(json, blob)
+	fmt.Printf("Register completed: %s", json.String())
 	return nil
 }
