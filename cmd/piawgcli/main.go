@@ -23,17 +23,17 @@ import (
 	"os"
 
 	"github.com/alecthomas/kong"
-	"gitlab.com/ddb_db/piawgcli/actions"
-	"gitlab.com/ddb_db/piawgcli/context"
+	"gitlab.com/ddb_db/piawgcli/internal/actions"
+	"gitlab.com/ddb_db/piawgcli/internal/context"
 	"k8s.io/klog/v2"
 )
 
 var cli struct {
-	CaseSensitive bool                   `help:"case sensitive searching" default:"1" negatable`
-	Debug         uint8                  `help:"log verbosity; higher=more log output" short:"v" default:"0"`
-	LogFile       string                 `help:"log output to file instead of stdout"`
-	ServerList    string                 `hidden help:"PIA server list source" default:"https://serverlist.piaservers.net/vpninfo/servers/v4"`
-	ShowRegions   actions.ShowRegionsCmd `cmd help:"Show available regions"`
+	Debug        uint8                   `help:"log verbosity; higher=more log output" default:"0"`
+	LogFile      string                  `help:"log output to file instead of stdout"`
+	ServerList   string                  `hidden help:"PIA server list source" default:"https://serverlist.piaservers.net/vpninfo/servers/v4"`
+	ShowRegions  actions.ShowRegionsCmd  `cmd help:"show available regions"`
+	CreateConfig actions.CreateConfigCmd `cmd help:"create a PIA WireGuard configuration"`
 }
 
 func main() {
@@ -49,9 +49,8 @@ func main() {
 	defer klog.Flush()
 	flag.Parse()
 	err := ctx.Run(&context.Context{
-		CaseSensitive: cli.CaseSensitive,
-		Debug:         uint8(cli.Debug),
-		ServerList:    cli.ServerList})
+		Debug:      uint8(cli.Debug),
+		ServerList: cli.ServerList})
 	ctx.FatalIfErrorf(err)
 }
 

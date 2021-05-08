@@ -24,19 +24,20 @@ import (
 	"strings"
 
 	"github.com/jamesrr39/semaphore"
-	"gitlab.com/ddb_db/piawgcli/context"
-	"gitlab.com/ddb_db/piawgcli/utils/net"
-	"gitlab.com/ddb_db/piawgcli/utils/os"
+	"gitlab.com/ddb_db/piawgcli/internal/context"
+	"gitlab.com/ddb_db/piawgcli/internal/utils/net"
+	"gitlab.com/ddb_db/piawgcli/internal/utils/os"
 	"k8s.io/klog/v2"
 )
 
 type ShowRegionsCmd struct {
-	Ping      bool   `optional help:"ping each region and sort results by ping time" default:"0"`
-	SortBy    string `optional help:"sort results by given field" enum:"id,name" default:"name"`
-	SortOrder string `optional help:"sort results ASCending or DESCending order" enum:"asc,desc" default:"asc"`
-	Search    string `optional help:"find regions containing search term"`
-	Threads   uint8  `optional help:"max number of worker threads for pinging regions" default:"8"`
-	Samples   uint8  `optional help:"number of samples to take when pinging regions" default:"3"`
+	CaseSensitive bool   `help:"case sensitive searching" default:"1" negatable`
+	Ping          bool   `optional help:"ping each region and sort results by ping time" default:"0"`
+	SortBy        string `optional help:"sort results by given field" enum:"id,name" default:"name"`
+	SortOrder     string `optional help:"sort results ASCending or DESCending order" enum:"asc,desc" default:"asc"`
+	Search        string `optional help:"find regions containing search term"`
+	Threads       uint8  `optional help:"max number of worker threads for pinging regions" default:"8"`
+	Samples       uint8  `optional help:"number of samples to take when pinging regions" default:"3"`
 }
 
 func (cmd *ShowRegionsCmd) Run(ctx *context.Context) error {
