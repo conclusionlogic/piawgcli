@@ -15,11 +15,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-package net
+package appstate
 
-import "io"
-
-//https://github.com/go-resty/resty
-type PiaClient interface {
-	CreateTunnel(piaId string, piaPassword string, piaRegionId string) (io.Reader, error)
+type State struct {
+	ServerList string
+	Debug      uint8
 }

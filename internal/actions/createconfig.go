@@ -17,7 +17,12 @@
 */
 package actions
 
-import "gitlab.com/ddb_db/piawgcli/internal/context"
+import (
+	"fmt"
+
+	"gitlab.com/ddb_db/piawgcli/internal/appstate"
+	"gitlab.com/ddb_db/piawgcli/internal/net/piaclient"
+)
 
 type CreateConfigCmd struct {
 	PiaId       string `required help:"PIA user id"`
@@ -25,6 +30,12 @@ type CreateConfigCmd struct {
 	PiaRegionId string `required help:"PIA region id to connect to; use show-regions command to get the region id"`
 }
 
-func (cmd *CreateConfigCmd) Run(ctx *context.Context) error {
+func (cmd *CreateConfigCmd) Run(state *appstate.State) error {
+	pia := piaclient.New(state.ServerList)
+	r, err := pia.GetRegionById(cmd.PiaRegionId)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Found region: %v", r)
 	return nil
 }

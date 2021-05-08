@@ -24,7 +24,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"gitlab.com/ddb_db/piawgcli/internal/actions"
-	"gitlab.com/ddb_db/piawgcli/internal/context"
+	"gitlab.com/ddb_db/piawgcli/internal/appstate"
 	"k8s.io/klog/v2"
 )
 
@@ -48,7 +48,7 @@ func main() {
 	}
 	defer klog.Flush()
 	flag.Parse()
-	err := ctx.Run(&context.Context{
+	err := ctx.Run(&appstate.State{
 		Debug:      uint8(cli.Debug),
 		ServerList: cli.ServerList})
 	ctx.FatalIfErrorf(err)

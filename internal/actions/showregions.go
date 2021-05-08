@@ -18,14 +18,13 @@
 package actions
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/jamesrr39/semaphore"
-	"gitlab.com/ddb_db/piawgcli/internal/context"
-	"gitlab.com/ddb_db/piawgcli/internal/utils/net"
+	"gitlab.com/ddb_db/piawgcli/internal/appstate"
+	"gitlab.com/ddb_db/piawgcli/internal/net/piaclient"
 	"gitlab.com/ddb_db/piawgcli/internal/utils/os"
 	"k8s.io/klog/v2"
 )
@@ -40,37 +39,25 @@ type ShowRegionsCmd struct {
 	Samples       uint8  `optional help:"number of samples to take when pinging regions" default:"3"`
 }
 
-func (cmd *ShowRegionsCmd) Run(ctx *context.Context) error {
+func (cmd *ShowRegionsCmd) Run(state *appstate.State) error {
 	action := showRegionsAction{
-		pinger:     os.NewPinger(),
-		urlFetcher: net.NewUrlFetcher(),
-		cmd:        cmd,
-		ctx:        ctx,
+		pia:    piaclient.New(state.ServerList),
+		pinger: os.NewPinger(),
+		cmd:    cmd,
 	}
 	return action.run()
 }
 
-type piaRegion struct {
-	Id   string
-	Name string
-	Dns  string
-	Ping uint16
-}
-
-type piaRegions struct {
-	Regions []piaRegion
-}
-
 type showRegionsAction struct {
-	cmd        *ShowRegionsCmd
-	ctx        *context.Context
-	pinger     os.Pinger
-	urlFetcher net.UrlFetcher
+	cmd      *ShowRegionsCmd
+	appState *appstate.State
+	pinger   os.Pinger
+	pia      piaclient.PiaClient
 }
 
 func (action showRegionsAction) run() error {
 	cmd := action.cmd
-	pia, err := action.parseServerList()
+	pia, err := action.pia.GetRegions()
 	if err != nil {
 		return err
 	}
@@ -87,7 +74,7 @@ func (action showRegionsAction) run() error {
 	return nil
 }
 
-func (action showRegionsAction) printRegions(regions []piaRegion) {
+func (action showRegionsAction) printRegions(regions []piaclient.PiaRegion) {
 	fmt.Printf("%-24s %-18s %-9s\n", "NAME", "ID", "PING (ms)")
 	fmt.Printf("%43s\n", strings.Repeat("=", 53))
 	for _, r := range regions {
@@ -99,7 +86,7 @@ func (action showRegionsAction) printRegions(regions []piaRegion) {
 	}
 }
 
-func (action showRegionsAction) sortRegions(regions []piaRegion) {
+func (action showRegionsAction) sortRegions(regions []piaclient.PiaRegion) {
 	cmd := action.cmd
 	sort.Slice(regions,
 		func(i, j int) bool {
@@ -124,27 +111,7 @@ func (action showRegionsAction) sortRegions(regions []piaRegion) {
 		})
 }
 
-func (action showRegionsAction) parseServerList() (piaRegions, error) {
-	payload, err := action.urlFetcher.FetchString(action.ctx.ServerList)
-	if err != nil {
-		return piaRegions{}, err
-	}
-	body := action.extractJsonBody(payload)
-	var pia piaRegions
-	err = json.Unmarshal(body, &pia)
-	return pia, err
-}
-
-func (action showRegionsAction) extractJsonBody(payload string) []byte {
-	// the endpoint pads the json response with a signature blob of some kind so we must extract out only the json data in the response
-	lastBrace := strings.LastIndex(payload, "}")
-	klog.V(4).Infof("last brace: %d", lastBrace)
-	body := []byte(payload[0 : lastBrace+1])
-	klog.V(4).Infof("region payload: %s", body[:70])
-	return body
-}
-
-func (action showRegionsAction) pingRegions(regions []piaRegion) {
+func (action showRegionsAction) pingRegions(regions []piaclient.PiaRegion) {
 	sem := semaphore.NewSemaphore(uint(action.cmd.Threads))
 	for i := range regions {
 		offset := i
@@ -158,10 +125,10 @@ func (action showRegionsAction) pingRegions(regions []piaRegion) {
 	sem.Wait()
 }
 
-func (action showRegionsAction) isMatch(r piaRegion) bool {
+func (action showRegionsAction) isMatch(r piaclient.PiaRegion) bool {
 	searchTerm := action.cmd.Search
 	var searchName, searchId, searchPredicate string
-	if !action.ctx.CaseSensitive {
+	if !action.cmd.CaseSensitive {
 		searchName = strings.ToLower(r.Name)
 		searchId = strings.ToLower(r.Id)
 		searchPredicate = strings.ToLower(searchTerm)
@@ -174,19 +141,19 @@ func (action showRegionsAction) isMatch(r piaRegion) bool {
 	return strings.Contains(searchName, searchPredicate) || strings.Contains(searchId, searchPredicate)
 }
 
-func (action showRegionsAction) doPing(r piaRegion) piaRegion {
+func (action showRegionsAction) doPing(r piaclient.PiaRegion) piaclient.PiaRegion {
 	ping, err := action.pinger.Ping(r.Dns, action.cmd.Samples)
 	if err != nil {
 		klog.Errorf("ping failed: %s\n%v", r.Name, err)
 		ping = 10000
 	}
-	region := piaRegion{Id: r.Id, Name: r.Name, Ping: ping, Dns: r.Dns}
+	region := piaclient.PiaRegion{Id: r.Id, Name: r.Name, Ping: ping, Dns: r.Dns}
 	klog.V(5).Infof("region pinged: %v", region)
 	return region
 }
 
-func (action showRegionsAction) filter(regions []piaRegion) []piaRegion {
-	var filtered []piaRegion
+func (action showRegionsAction) filter(regions []piaclient.PiaRegion) []piaclient.PiaRegion {
+	var filtered []piaclient.PiaRegion
 	for _, r := range regions {
 		if action.isMatch(r) {
 			filtered = append(filtered, r)
