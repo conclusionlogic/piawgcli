@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gitlab.com/ddb_db/piawgcli/utils/net"
-	"gitlab.com/ddb_db/piawgcli/utils/os"
+	"gitlab.com/ddb_db/piawgcli/internal/utils/net"
+	"gitlab.com/ddb_db/piawgcli/internal/utils/os"
 )
 
 // https://github.com/stretchr/testify
