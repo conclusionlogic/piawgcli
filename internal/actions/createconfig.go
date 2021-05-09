@@ -19,27 +19,51 @@ package actions
 
 import (
 	"fmt"
-	"io"
-	"strings"
+	"os"
+	"text/template"
+
+	_ "embed"
 
 	"gitlab.com/ddb_db/piawgcli/internal/appstate"
 	"gitlab.com/ddb_db/piawgcli/internal/net/piaclient"
+	"k8s.io/klog/v2"
 )
 
 type CreateConfigCmd struct {
-	PiaId       string `required help:"PIA user id"`
-	PiaPassword string `required help:"PIA password"`
-	PiaRegionId string `required help:"PIA region id to connect to; use show-regions command to get the region id"`
+	PiaId       string `required help:"PIA user id" placeholder:"ID"`
+	PiaPassword string `required help:"PIA password" placeholder:"PWD"`
+	PiaRegionId string `required help:"PIA region id to connect to; use show-regions command to get the region id" placeholder:"ID"`
+	Output      string `help:"write wg config to file instead of stdout" placeholder:"FILE"`
 }
+
+//go:embed assets/wg.conf.tmpl
+var wgConfTmpl string
 
 func (cmd *CreateConfigCmd) Run(state *appstate.State) error {
 	pia := piaclient.New(state.ServerList)
-	blob, err := pia.CreateTunnel(cmd.PiaId, cmd.PiaPassword, cmd.PiaRegionId)
+	piaInterface, err := pia.CreateTunnel(cmd.PiaId, cmd.PiaPassword, cmd.PiaRegionId)
 	if err != nil {
 		return err
 	}
-	json := new(strings.Builder)
-	_, _ = io.Copy(json, blob)
-	fmt.Printf("Register completed: %s", json.String())
+	tmpl, err := template.New("wgconf").Parse(wgConfTmpl)
+	if err != nil {
+		return fmt.Errorf("wg template parsing failed: %w", err)
+	}
+	var output *os.File
+	if len(cmd.Output) > 0 {
+		klog.V(4).Infof("writing config to %s", cmd.Output)
+		output, err = os.Create(cmd.Output)
+		if err != nil {
+			return err
+		}
+		defer output.Close()
+	} else {
+		klog.V(4).Info("writing config to stdout")
+		output = os.Stdout
+	}
+	err = tmpl.Execute(output, piaInterface)
+	if err != nil {
+		return fmt.Errorf("template processing failed: %w", err)
+	}
 	return nil
 }

@@ -30,7 +30,7 @@ import (
 
 var cli struct {
 	Debug        uint8                   `help:"log verbosity; higher=more log output" default:"0"`
-	LogFile      string                  `help:"log output to file instead of stdout"`
+	LogFile      string                  `help:"log output to file instead of stdout" placeholder:"FILE"`
 	ServerList   string                  `hidden help:"PIA server list source" default:"https://serverlist.piaservers.net/vpninfo/servers/v4"`
 	ShowRegions  actions.ShowRegionsCmd  `cmd help:"show available regions"`
 	CreateConfig actions.CreateConfigCmd `cmd help:"create a PIA WireGuard configuration"`

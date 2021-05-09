@@ -19,10 +19,11 @@ package piaclient
 
 import (
 	"crypto/tls"
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -34,7 +35,7 @@ type PiaClient interface {
 	GetRegions() (PiaRegions, error)
 	GetRegionById(id string) (PiaRegion, error)
 	GetAuthToken(piaId string, piaPassword string, piaRegion PiaRegion) (string, error)
-	CreateTunnel(piaId string, piaPassword string, piaRegionId string) (io.Reader, error)
+	CreateTunnel(piaId string, piaPassword string, piaRegionId string) (PiaInterface, error)
 }
 
 type PiaRegion struct {
@@ -68,6 +69,22 @@ type UnknownRegionError struct {
 	errMsg string
 }
 
+type PiaInterface struct {
+	Status           string
+	ServerPublicKey  string `json:"server_key"`
+	ServerPort       uint16 `json:"server_port"`
+	ServerEndpoint   string `json:"server_ip"`
+	ServerVirtualIp  string `json:"server_vip"`
+	ClientIp         string `json:"peer_ip"`
+	ClientPublicKey  string `json:"peer_pubkey"`
+	ClientPrivateKey string
+	PiaRegion        PiaRegion
+	CreatedOn        string
+}
+
+//go:embed assets/pia.pem
+var piaPem string
+
 func (err UnknownRegionError) Error() string {
 	return err.errMsg
 }
@@ -98,7 +115,7 @@ func (clnt piaClientImpl) getHttpForRegion(region PiaRegion) *resty.Client {
 			SetTLSClientConfig(&tls.Config{
 				ServerName: region.Servers.Meta[0].Cn,
 			}).
-			SetRootCertificate("assets/pia.pem")
+			SetRootCertificateFromString(piaPem)
 		clnt.http[region.Id] = c
 	}
 	return c
@@ -156,19 +173,19 @@ func (clnt piaClientImpl) GetRegionById(id string) (PiaRegion, error) {
 	return PiaRegion{}, newUnknownRegionError(fmt.Sprintf("unknown region id: %s", id))
 }
 
-func (clnt piaClientImpl) CreateTunnel(piaId string, piaPwd string, piaRegionId string) (io.Reader, error) {
+func (clnt piaClientImpl) CreateTunnel(piaId string, piaPwd string, piaRegionId string) (PiaInterface, error) {
 	privKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
-		return nil, fmt.Errorf("wg key generation failed: %w", err)
+		return PiaInterface{}, fmt.Errorf("wg key generation failed: %w", err)
 	}
 	pubKey := privKey.PublicKey()
 	r, err := clnt.GetRegionById(piaRegionId)
 	if err != nil {
-		return nil, err
+		return PiaInterface{}, err
 	}
 	authToken, err := clnt.GetAuthToken(piaId, piaPwd, r)
 	if err != nil {
-		return nil, err
+		return PiaInterface{}, err
 	}
 	url := fmt.Sprintf("https://%s:1337/addKey", r.Servers.Wg[0].Ip)
 	http := clnt.getHttpForRegion(r)
@@ -178,9 +195,17 @@ func (clnt piaClientImpl) CreateTunnel(piaId string, piaPwd string, piaRegionId 
 			"pt":     authToken,
 		}).Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("addKey failed: %w", err)
+		return PiaInterface{}, fmt.Errorf("addKey failed: %w", err)
 	}
-	return strings.NewReader(resp.String()), nil
+	iface := PiaInterface{}
+	err = json.Unmarshal(resp.Body(), &iface)
+	if err != nil || iface.Status != "OK" {
+		return PiaInterface{}, fmt.Errorf("error parsing addKey response: %w", err)
+	}
+	iface.ClientPrivateKey = privKey.String()
+	iface.PiaRegion = r
+	iface.CreatedOn = time.Now().Format(time.UnixDate)
+	return iface, nil
 }
 
 func parsePiaRegionJsonBody(payload string) (PiaRegions, error) {
