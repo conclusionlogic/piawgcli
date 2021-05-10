@@ -21,14 +21,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"gitlab.com/ddb_db/piawgcli/internal/utils/net"
+	"gitlab.com/ddb_db/piawgcli/internal/net/piaclient"
 	"gitlab.com/ddb_db/piawgcli/internal/utils/os"
 )
 
 // https://github.com/stretchr/testify
 // TODO table driven tests
 
-var regions = []piaRegion{
+var regions = []piaclient.PiaRegion{
 	{Id: "a", Name: "f", Ping: 0},
 	{Id: "b", Name: "b", Ping: 1},
 	{Id: "c", Name: "e", Ping: 2},
@@ -37,7 +37,7 @@ var regions = []piaRegion{
 	{Id: "f", Name: "a", Ping: 5},
 }
 
-var regionsMixedCase = []piaRegion{
+var regionsMixedCase = []piaclient.PiaRegion{
 	{Id: "a", Name: "f", Ping: 0},
 	{Id: "B", Name: "b", Ping: 1},
 	{Id: "c", Name: "E", Ping: 2},
@@ -52,13 +52,13 @@ func TestSortRegionsAscendingByPing(t *testing.T) {
 		SortOrder: "asc",
 	}
 	var a = showRegionsAction{
-		cmd:        &c,
-		ctx:        nil,
-		pinger:     os.NewPinger(),
-		urlFetcher: net.NewUrlFetcher(),
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
 	}
 	a.sortRegions(regions)
-	result := func(r []piaRegion) []uint16 {
+	result := func(r []piaclient.PiaRegion) []uint16 {
 		var vals []uint16
 		for _, it := range r {
 			vals = append(vals, it.Ping)
@@ -75,13 +75,13 @@ func TestSortRegionsAscendingById(t *testing.T) {
 		SortOrder: "asc",
 	}
 	var a = showRegionsAction{
-		cmd:        &c,
-		ctx:        nil,
-		pinger:     os.NewPinger(),
-		urlFetcher: net.NewUrlFetcher(),
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
 	}
 	a.sortRegions(regions)
-	result := func(r []piaRegion) []string {
+	result := func(r []piaclient.PiaRegion) []string {
 		var vals []string
 		for _, it := range r {
 			vals = append(vals, it.Id)
@@ -98,13 +98,13 @@ func TestSortRegionsAscendingByName(t *testing.T) {
 		SortOrder: "asc",
 	}
 	var a = showRegionsAction{
-		cmd:        &c,
-		ctx:        nil,
-		pinger:     os.NewPinger(),
-		urlFetcher: net.NewUrlFetcher(),
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
 	}
 	a.sortRegions(regions)
-	result := func(r []piaRegion) []string {
+	result := func(r []piaclient.PiaRegion) []string {
 		var vals []string
 		for _, it := range r {
 			vals = append(vals, it.Name)
@@ -120,13 +120,13 @@ func TestSortRegionsDescendingByPing(t *testing.T) {
 		SortOrder: "desc",
 	}
 	var a = showRegionsAction{
-		cmd:        &c,
-		ctx:        nil,
-		pinger:     os.NewPinger(),
-		urlFetcher: net.NewUrlFetcher(),
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
 	}
 	a.sortRegions(regions)
-	result := func(r []piaRegion) []uint16 {
+	result := func(r []piaclient.PiaRegion) []uint16 {
 		var vals []uint16
 		for _, it := range r {
 			vals = append(vals, it.Ping)
@@ -143,13 +143,13 @@ func TestSortRegionsDesccendingById(t *testing.T) {
 		SortOrder: "desc",
 	}
 	var a = showRegionsAction{
-		cmd:        &c,
-		ctx:        nil,
-		pinger:     os.NewPinger(),
-		urlFetcher: net.NewUrlFetcher(),
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
 	}
 	a.sortRegions(regions)
-	result := func(r []piaRegion) []string {
+	result := func(r []piaclient.PiaRegion) []string {
 		var vals []string
 		for _, it := range r {
 			vals = append(vals, it.Id)
@@ -166,13 +166,13 @@ func TestSortRegionsDescendingByName(t *testing.T) {
 		SortOrder: "desc",
 	}
 	var a = showRegionsAction{
-		cmd:        &c,
-		ctx:        nil,
-		pinger:     os.NewPinger(),
-		urlFetcher: net.NewUrlFetcher(),
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
 	}
 	a.sortRegions(regions)
-	result := func(r []piaRegion) []string {
+	result := func(r []piaclient.PiaRegion) []string {
 		var vals []string
 		for _, it := range r {
 			vals = append(vals, it.Name)

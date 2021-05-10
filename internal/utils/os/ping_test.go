@@ -28,8 +28,17 @@ type ping struct {
 	err      error
 }
 
-func (p ping) ping(string, uint8) (uint16, error) {
+func (p ping) Ping(string, uint8) (uint16, error) {
 	return p.duration, p.err
+}
+
+func newPinger(duration uint16, err error) abstractPinger {
+	return abstractPinger{
+		pinger: ping{
+			duration: duration,
+			err:      err,
+		},
+	}
 }
 
 func TestPingInterpretations(t *testing.T) {
@@ -37,7 +46,7 @@ func TestPingInterpretations(t *testing.T) {
 		input    uint16
 		expected uint16
 	}{
-		{0, 1},
+		{0, 1}, // subzero pings are rounded up to 1ms
 		{1, 1},
 		{2, 2},
 		{10, 10},
@@ -46,11 +55,7 @@ func TestPingInterpretations(t *testing.T) {
 		{10000, 10000},
 	}
 	for i, tc := range tests {
-		pingImpl := ping{
-			duration: tc.input,
-			err:      nil,
-		}
-		p := newPinger(pingImpl, pingImpl)
+		p := newPinger(tc.input, nil)
 		d, err := p.Ping("foo", 1)
 		if err != nil || d != tc.expected {
 			t.Errorf("itr %d: expect %d, received %d", i, tc.expected, d)
@@ -59,13 +64,8 @@ func TestPingInterpretations(t *testing.T) {
 }
 
 func TestFailedPing(t *testing.T) {
-	pingImpl := ping{
-		duration: 0,
-		err:      errors.Errorf("oops"),
-	}
-	p := newPinger(pingImpl, pingImpl)
-	_, err := p.Ping("foo", 1)
-	if err == nil || err.Error() != "oops" {
-		t.Errorf("did not receive expeted error response")
+	_, err := newPinger(0, errors.Errorf("oops")).Ping("foo", 1)
+	if err == nil || err.Error()[0:12] != "ping failed:" {
+		t.Errorf("did not receive expected error response")
 	}
 }

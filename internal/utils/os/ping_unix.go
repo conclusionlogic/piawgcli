@@ -30,15 +30,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type Pinger interface {
-	Ping(host string, samples uint8) (avgDuration uint16, err error)
-}
-
 type pingerImpl struct{}
-
-func NewPinger() Pinger {
-	return pingerImpl{}
-}
 
 func (p pingerImpl) Ping(host string, samples uint8) (uint16, error) {
 	// TODO ping timeout should be configurable
@@ -60,7 +52,6 @@ func (p pingerImpl) Ping(host string, samples uint8) (uint16, error) {
 			ping = uint16(val)
 		} else {
 			klog.Error("unable to find ping timings in output")
-			ping = 9999
 		}
 	}
 	return ping, err
