@@ -46,7 +46,7 @@ func TestPingInterpretations(t *testing.T) {
 		input    uint16
 		expected uint16
 	}{
-		{0, 1}, // subzero pings are rounded up to 1ms
+		{0, 1}, // pings <1ms are rounded up to 1ms
 		{1, 1},
 		{2, 2},
 		{10, 10},
@@ -67,5 +67,53 @@ func TestFailedPing(t *testing.T) {
 	_, err := newPinger(0, errors.Errorf("oops")).Ping("foo", 1)
 	if err == nil || err.Error()[0:12] != "ping failed:" {
 		t.Errorf("did not receive expected error response")
+	}
+}
+
+func TestUnixPingParse(t *testing.T) {
+	var tests = []struct {
+		input    string
+		expected uint16
+	}{
+		{"rtt min/avg/max/mdev = 9.617/9.909/10.584/0.344 ms", 9},
+		{"rtt min/avg/max/mdev = 0.617/0.909/4.584/0.344 ms", 0},
+		{"rtt min/avg/max/mdev = 0.617/1.909/4.584/1.344 ms", 1},
+		{"rtt min/avg/max/mdev = 0.617/15.909/4.584/0.344 ms", 15},
+		{"rtt min/avg/max/mdev = 0.617/232.909/4.584/0.344 ms", 232},
+		{"rtt min/avg/max/mdev = 0.617/1000.909/4.584/0.344 ms", 1000},
+	}
+
+	for i, tc := range tests {
+		result, err := parsePingTimeUnix(tc.input)
+		if err != nil {
+			t.Errorf("unexpected error [itr=%d]: %w", i, err)
+		}
+		if result != tc.expected {
+			t.Errorf("expected %d, got %d [itr=%d]", tc.expected, result, i)
+		}
+	}
+}
+
+func TestWindowsPingParse(t *testing.T) {
+	var tests = []struct {
+		input    string
+		expected uint16
+	}{
+		{"    Minimum = 9ms, Maximum = 10ms, Average = 9ms", 9},
+		{"    Minimum = 9ms, Maximum = 10ms, Average = 0ms", 0},
+		{"    Minimum = 9ms, Maximum = 10ms, Average = 1ms", 1},
+		{"    Minimum = 9ms, Maximum = 10ms, Average = 15ms", 15},
+		{"    Minimum = 9ms, Maximum = 10ms, Average = 232ms", 232},
+		{"    Minimum = 9ms, Maximum = 10ms, Average = 1000ms", 1000},
+	}
+
+	for i, tc := range tests {
+		result, err := parsePingTimeWindows(tc.input)
+		if err != nil {
+			t.Errorf("unexpected error [itr=%d]: %w", i, err)
+		}
+		if result != tc.expected {
+			t.Errorf("expected %d, got %d [itr=%d]", tc.expected, result, i)
+		}
 	}
 }

@@ -17,7 +17,11 @@
 */
 package os
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+	"strconv"
+)
 
 type Pinger interface {
 	Ping(host string, samples uint8) (avgDuration uint16, err error)
@@ -39,6 +43,36 @@ func (p abstractPinger) Ping(host string, samples uint8) (uint16, error) {
 		return 9999, fmt.Errorf("ping failed: %w", err)
 	} else if ping == 0 {
 		ping = 1
+	}
+	return ping, err
+}
+
+func parsePingTimeUnix(output string) (uint16, error) {
+	var err error
+	var ping uint16
+	re := regexp.MustCompile(`= \d+(?:\.\d+)?\/(\d+)(?:\.\d+)?\/.+ ms`)
+	matches := re.FindStringSubmatch(output)
+	if len(matches) > 1 {
+		var val uint64
+		val, err = strconv.ParseUint(matches[1], 10, 16)
+		ping = uint16(val)
+	} else {
+		err = fmt.Errorf("unable to find ping timings in output [unix]")
+	}
+	return ping, err
+}
+
+func parsePingTimeWindows(output string) (uint16, error) {
+	var err error
+	var ping uint16
+	re := regexp.MustCompile(`Average = (\d+)ms`)
+	matches := re.FindStringSubmatch(output)
+	if len(matches) > 1 {
+		var val uint64
+		val, err = strconv.ParseUint(matches[1], 10, 16)
+		ping = uint16(val)
+	} else {
+		err = fmt.Errorf("unable to find ping timings in output [windows]")
 	}
 	return ping, err
 }

@@ -40,19 +40,18 @@ func (p pingerImpl) Ping(host string, samples uint8) (uint16, error) {
 	cmd := exec.CommandContext(ctx, cmdline[0], cmdline[1:]...)
 	out, err := cmd.CombinedOutput()
 	klog.V(4).Infof("Executing command line: %v [rc=%d]", cmdline, cmd.ProcessState.ExitCode())
+	klog.V(5).Infof("Output:\n%s", string(out))
 	var ping uint16
 	if ctx.Err() != nil {
-		err = ctx.Err()
+		return ping, ctx.Err()
 	} else {
-		re := regexp.MustCompile(`= \d+(?:\.\d+)?\/(\d+)(?:\.\d+)?\/.+ ms`)
-		matches := re.FindStringSubmatch(string(out))
-		if len(matches) > 1 {
-			var val uint64
-			val, err = strconv.ParseUint(matches[1], 10, 16)
-			ping = uint16(val)
-		} else {
-			klog.Error("unable to find ping timings in output")
+		if err != nil {
+			if !klog.V(5).Enabled() {
+				klog.Errorf("Output:\n%s", string(out))
+			}
+			return ping, fmt.Errorf("ping failed: %w", err)
 		}
+		ping, err = parsePingTimeUnix(string(out))
 	}
 	return ping, err
 }

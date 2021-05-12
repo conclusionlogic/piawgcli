@@ -23,8 +23,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -43,17 +41,15 @@ func (p pingerImpl) Ping(host string, samples uint8) (uint16, error) {
 	klog.V(5).Infof("Output:\n%s", string(out))
 	var ping uint16
 	if ctx.Err() != nil {
-		err = ctx.Err()
+		return ping, ctx.Err()
 	} else {
-		re := regexp.MustCompile(`Average = (\d+)ms`)
-		matches := re.FindStringSubmatch(string(out))
-		if len(matches) > 1 {
-			var val uint64
-			val, err = strconv.ParseUint(matches[1], 10, 16)
-			ping = uint16(val)
-		} else {
-			klog.Error("unable to find ping timings in output")
+		if err != nil {
+			if !klog.V(5).Enabled() {
+				klog.Errorf("Output:\n%s", string(out))
+			}
+			return ping, fmt.Errorf("ping failed: %w", err)
 		}
+		ping, err = parsePingTimeWindows(string(out))
 	}
 	return ping, err
 }
