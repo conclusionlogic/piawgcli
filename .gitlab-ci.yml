@@ -11,6 +11,7 @@ before_script:
 stages:
   - test
   - build
+  - release
   
 test-project:
   stage: test
@@ -32,3 +33,12 @@ build-project:
   artifacts:
     paths:
       - artifacts/
+
+release:
+  only:
+    variables:
+      - $CI_COMMIT_TAG =~ /^v\d+\./
+  stage: release
+  script:
+    - cd $CI_PROJECT_DIR/artifacts
+    - 'find * -type f -exec curl -f --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file {} ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/piawgcli/${CI_COMMIT_TAG}/{} \;'
