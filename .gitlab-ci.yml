@@ -27,7 +27,7 @@ build-project:
     - mkdir -p $GOPATH/src/$REPO_NAME
     - cp -r $CI_PROJECT_DIR/* $GOPATH/src/$REPO_NAME/
     - cd $GOPATH/src/$REPO_NAME/cmd/piawgcli
-    - bash build-all.sh $OUTPUT $CI_PROJECT_DIR
+    - bash $CI_PROJECT_DIR/build-all.sh $OUTPUT $CI_PROJECT_DIR
     
   artifacts:
     paths:
