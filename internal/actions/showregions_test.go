@@ -18,6 +18,7 @@
 package actions
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -44,6 +45,70 @@ var regionsMixedCase = []piaclient.PiaRegion{
 	{Id: "D", Name: "C", Ping: 3},
 	{Id: "e", Name: "d", Ping: 4},
 	{Id: "F", Name: "A", Ping: 5},
+}
+
+func TestIsMatchNameOnly(t *testing.T) {
+	var c = ShowRegionsCmd{
+		CaseSensitive: false,
+	}
+	var a = showRegionsAction{
+		cmd:      &c,
+		appState: nil,
+		pinger:   nil,
+		pia:      nil,
+	}
+	for _, r := range regions {
+		c.Search = strings.ToUpper(r.Name)
+		require.Equal(t, true, a.isMatch(r))
+	}
+}
+
+func TestIsMatchIdOnly(t *testing.T) {
+	var c = ShowRegionsCmd{
+		CaseSensitive: false,
+	}
+	var a = showRegionsAction{
+		cmd:      &c,
+		appState: nil,
+		pinger:   nil,
+		pia:      nil,
+	}
+	for _, r := range regions {
+		c.Search = strings.ToUpper(r.Id)
+		require.Equal(t, true, a.isMatch(r))
+	}
+}
+
+func TestIsMatchIdOnlyCaseSensitive(t *testing.T) {
+	var c = ShowRegionsCmd{
+		CaseSensitive: true,
+	}
+	var a = showRegionsAction{
+		cmd:      &c,
+		appState: nil,
+		pinger:   nil,
+		pia:      nil,
+	}
+	for _, r := range regions {
+		c.Search = strings.ToUpper(r.Id)
+		require.Equal(t, false, a.isMatch(r))
+	}
+}
+
+func TestIsMatchNameOnlyCaseSensitive(t *testing.T) {
+	var c = ShowRegionsCmd{
+		CaseSensitive: true,
+	}
+	var a = showRegionsAction{
+		cmd:      &c,
+		appState: nil,
+		pinger:   nil,
+		pia:      nil,
+	}
+	for _, r := range regions {
+		c.Search = strings.ToUpper(r.Name)
+		require.Equal(t, false, a.isMatch(r))
+	}
 }
 
 func TestSortRegionsAscendingByPing(t *testing.T) {
@@ -180,4 +245,96 @@ func TestSortRegionsDescendingByName(t *testing.T) {
 		return vals
 	}(regions)
 	require.Equal(t, []string{"f", "e", "d", "c", "b", "a"}, result, "not equal")
+}
+
+func TestSortRegionsAscendingByIdCaseSensitive(t *testing.T) {
+	var c = ShowRegionsCmd{
+		Ping:      false,
+		SortBy:    "id",
+		SortOrder: "asc",
+	}
+	var a = showRegionsAction{
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
+	}
+	a.sortRegions(regionsMixedCase)
+	result := func(r []piaclient.PiaRegion) []string {
+		var vals []string
+		for _, it := range r {
+			vals = append(vals, it.Id)
+		}
+		return vals
+	}(regionsMixedCase)
+	require.Equal(t, []string{"B", "D", "F", "a", "c", "e"}, result, "not equal")
+}
+
+func TestSortRegionsAscendingByNameCaseSensitive(t *testing.T) {
+	var c = ShowRegionsCmd{
+		Ping:      false,
+		SortBy:    "name",
+		SortOrder: "asc",
+	}
+	var a = showRegionsAction{
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
+	}
+	a.sortRegions(regionsMixedCase)
+	result := func(r []piaclient.PiaRegion) []string {
+		var vals []string
+		for _, it := range r {
+			vals = append(vals, it.Name)
+		}
+		return vals
+	}(regionsMixedCase)
+	require.Equal(t, []string{"A", "C", "E", "b", "d", "f"}, result, "not equal")
+}
+
+func TestSortRegionsDesccendingByIdCaseSensitive(t *testing.T) {
+	var c = ShowRegionsCmd{
+		Ping:      false,
+		SortBy:    "id",
+		SortOrder: "desc",
+	}
+	var a = showRegionsAction{
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
+	}
+	a.sortRegions(regionsMixedCase)
+	result := func(r []piaclient.PiaRegion) []string {
+		var vals []string
+		for _, it := range r {
+			vals = append(vals, it.Id)
+		}
+		return vals
+	}(regionsMixedCase)
+	require.Equal(t, []string{"e", "c", "a", "F", "D", "B"}, result, "not equal")
+}
+
+func TestSortRegionsDescendingByNameCaseSensitve(t *testing.T) {
+	var c = ShowRegionsCmd{
+		Ping:      false,
+		SortBy:    "name",
+		SortOrder: "desc",
+	}
+	var a = showRegionsAction{
+		cmd:      &c,
+		appState: nil,
+		pinger:   os.NewPinger(),
+		pia:      nil,
+	}
+	a.sortRegions(regionsMixedCase)
+	result := func(r []piaclient.PiaRegion) []string {
+		var vals []string
+		for _, it := range r {
+			vals = append(vals, it.Name)
+		}
+		return vals
+	}(regionsMixedCase)
+	require.Equal(t, []string{"f", "d", "b", "E", "C", "A"}, result, "not equal")
 }

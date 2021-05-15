@@ -20,6 +20,7 @@ package actions
 import (
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	_ "embed"
@@ -39,16 +40,14 @@ type CreateConfigCmd struct {
 //go:embed assets/wg.conf.tmpl
 var wgConfTmpl string
 
+// TODO break this down (verify tmpl output, etc)
 func (cmd *CreateConfigCmd) Run(state *appstate.State) error {
 	pia := piaclient.New(state.ServerList)
 	piaInterface, err := pia.CreateTunnel(cmd.PiaId, cmd.PiaPassword, cmd.PiaRegionId)
 	if err != nil {
 		return err
 	}
-	tmpl, err := template.New("wgconf").Parse(wgConfTmpl)
-	if err != nil {
-		return fmt.Errorf("wg template parsing failed: %w", err)
-	}
+
 	var output *os.File
 	if len(cmd.Output) > 0 {
 		klog.V(4).Infof("writing config to %s", cmd.Output)
@@ -61,9 +60,27 @@ func (cmd *CreateConfigCmd) Run(state *appstate.State) error {
 		klog.V(4).Info("writing config to stdout")
 		output = os.Stdout
 	}
-	err = tmpl.Execute(output, piaInterface)
+
+	var result string
+	result, err = processTemplate(wgConfTmpl, piaInterface)
 	if err != nil {
 		return fmt.Errorf("template processing failed: %w", err)
 	}
+
+	_, err = output.WriteString(result)
+	if err != nil {
+		return fmt.Errorf("io error writing output: %w", err)
+	}
+
 	return nil
+}
+
+func processTemplate(tmplSource string, bindings interface{}) (string, error) {
+	tmpl, err := template.New("wgconf").Parse(tmplSource)
+	if err != nil {
+		return "", fmt.Errorf("wg template parsing failed: %w", err)
+	}
+	output := strings.Builder{}
+	err = tmpl.Execute(&output, bindings)
+	return output.String(), err
 }
