@@ -23,7 +23,7 @@ test-project:
 build-project:
   stage: build
   script:
-    - OUTPUT="ouput"
+    - OUTPUT="piawgcli"
     - mkdir -p $GOPATH/src/$REPO_NAME
     - cp -r $CI_PROJECT_DIR/* $GOPATH/src/$REPO_NAME/
     - cd $GOPATH/src/$REPO_NAME/cmd/piawgcli

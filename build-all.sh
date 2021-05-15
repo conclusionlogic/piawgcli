@@ -1,6 +1,9 @@
 BIN_FILE_NAME_PREFIX=$1
 PROJECT_DIR=$2
-PLATFORMS=$(go tool dist list)
+#PLATFORMS=$(go tool dist list)
+PLATFORMS="linux/amd64
+freebsd/amd64
+windows/amd64"
 for PLATFORM in $PLATFORMS; do
         GOOS=${PLATFORM%/*}
         GOARCH=${PLATFORM#*/}
