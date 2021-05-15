@@ -23,7 +23,7 @@ To generate a WireGuard configuration file suitable for processing by `wg-quick`
 piawgcli create-config --pia-id <id> --pia-password <pwd> --pia-region-id <regionid>
 ```
 
-Use your PIA credentials and a valid PIA region id.  When sucessful, a valid
+Use your PIA credentials and a valid PIA region id.  When successful, a valid
 WireGuard config file will be output to stdout.  You may also use the `--outfile`
 option to write the generated config to a file instead of stdout.
 
@@ -56,7 +56,8 @@ have to create a new configuration.
 Because of this, a tool more tightly integrated with your router/gateway that can not
 only generate valid configurations but also monitor and automatically regenerate 
 connections as needed would be a more reliable solution.  I have other projects that
-have tigher integrations with [VyOS]() and [pfSense]() that would be more useful for
+have tigher integrations with [VyOS](https://gitlab.com/ddb_db/pfpiamgr/-/tree/feature/piawgmgr)
+and [pfSense](https://gitlab.com/ddb_db/pfpiamgr) that would be more useful for
 those platforms.  However, this tool does provide a solid building block for those
 platforms that do not have a more tightly integrated solution (vanilla Linux distros,
 FreeBSD, etc.).  There is also a build of this for Windows, but is mostly just created
