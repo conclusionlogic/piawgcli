@@ -7,7 +7,7 @@ windows/amd64"
 for PLATFORM in $PLATFORMS; do
         GOOS=${PLATFORM%/*}
         GOARCH=${PLATFORM#*/}
-        FILEPATH="$PROJECT_DIR/artifacts/"
+        FILEPATH="$PROJECT_DIR/artifacts"
         mkdir -p $FILEPATH
         BIN_FILE_NAME="$FILEPATH/${BIN_FILE_NAME_PREFIX}"
         if [[ "${GOOS}" == "windows" ]]; then BIN_FILE_NAME="${BIN_FILE_NAME}.exe"; fi
