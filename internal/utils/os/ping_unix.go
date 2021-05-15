@@ -23,8 +23,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"time"
 
 	"k8s.io/klog/v2"
