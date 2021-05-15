@@ -14,6 +14,6 @@ for PLATFORM in $PLATFORMS; do
         CMD="GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${BIN_FILE_NAME}"
         echo "${CMD}"
         eval $CMD || FAILURES="${FAILURES} ${PLATFORM}"
-        gzip -c $BIN_FILE_NAME > ${GOOS}-${GOARCH}-${BIN_FILE_NAME}.gz
+        mv $BIN_FILE_NAME ${GOOS}-${GOARCH}-`basename ${BIN_FILE_NAME}`
         rm -f $BIN_FILE_NAME
 done
