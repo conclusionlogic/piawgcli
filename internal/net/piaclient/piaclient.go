@@ -31,11 +31,12 @@ import (
 )
 
 //https://github.com/go-resty/resty
+
 type PiaClient interface {
-	GetRegions() (PiaRegions, error)
-	GetRegionById(id string) (PiaRegion, error)
-	GetAuthToken(piaId string, piaPassword string, piaRegion PiaRegion) (string, error)
 	CreateTunnel(piaId string, piaPassword string, piaRegionId string) (PiaInterface, error)
+	GetRegions() (PiaRegions, error)
+	getAuthToken(piaId string, piaPassword string, piaRegion PiaRegion) (string, error)
+	getRegionById(id string) (PiaRegion, error)
 }
 
 type PiaRegion struct {
@@ -121,7 +122,7 @@ func (clnt piaClientImpl) getHttpForRegion(region PiaRegion) *resty.Client {
 	return c
 }
 
-func (clnt piaClientImpl) GetAuthToken(id string, pwd string, region PiaRegion) (string, error) {
+func (clnt piaClientImpl) getAuthToken(id string, pwd string, region PiaRegion) (string, error) {
 	url := fmt.Sprintf("https://%s/authv3/generateToken", region.Servers.Meta[0].Ip)
 	resp, err := clnt.getHttpForRegion(region).R().
 		SetBasicAuth(id, pwd).
@@ -129,22 +130,22 @@ func (clnt piaClientImpl) GetAuthToken(id string, pwd string, region PiaRegion) 
 	if err != nil {
 		err = fmt.Errorf("token fetch failed: %w", err)
 		return "", err
-	} else {
-		httpStatus := resp.StatusCode()
-		if httpStatus == 403 {
-			return "", fmt.Errorf("invalid PIA credentials")
-		} else if httpStatus < 200 || httpStatus > 299 {
-			return "", fmt.Errorf("invalid auth token response: %d", httpStatus)
-		}
-		klog.V(4).Info(resp.String())
 	}
+	httpStatus := resp.StatusCode()
+	if httpStatus == 403 {
+		return "", fmt.Errorf("invalid PIA credentials")
+	}
+	if httpStatus < 200 || httpStatus > 299 {
+		return "", fmt.Errorf("invalid auth token response: %d", httpStatus)
+	}
+	klog.V(4).Info(resp.String())
 	var jsonResp struct {
 		Status string
 		Token  string
 	}
 	err = json.Unmarshal(resp.Body(), &jsonResp)
 	if err != nil {
-		err = fmt.Errorf("json parse of auth token failed: %w", err)
+		return "", fmt.Errorf("json parse of auth token failed: %w", err)
 	}
 	if jsonResp.Status != "OK" {
 		err = fmt.Errorf("invalid auth token response: %s [%d]", jsonResp.Status, resp.StatusCode())
@@ -160,7 +161,7 @@ func (clnt piaClientImpl) GetRegions() (PiaRegions, error) {
 	return parsePiaRegionJsonBody(resp.String())
 }
 
-func (clnt piaClientImpl) GetRegionById(id string) (PiaRegion, error) {
+func (clnt piaClientImpl) getRegionById(id string) (PiaRegion, error) {
 	regions, err := clnt.GetRegions()
 	if err != nil {
 		return PiaRegion{}, err
@@ -179,11 +180,11 @@ func (clnt piaClientImpl) CreateTunnel(piaId string, piaPwd string, piaRegionId 
 		return PiaInterface{}, fmt.Errorf("wg key generation failed: %w", err)
 	}
 	pubKey := privKey.PublicKey()
-	r, err := clnt.GetRegionById(piaRegionId)
+	r, err := clnt.getRegionById(piaRegionId)
 	if err != nil {
 		return PiaInterface{}, err
 	}
-	authToken, err := clnt.GetAuthToken(piaId, piaPwd, r)
+	authToken, err := clnt.getAuthToken(piaId, piaPwd, r)
 	if err != nil {
 		return PiaInterface{}, err
 	}
