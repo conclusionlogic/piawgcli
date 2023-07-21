@@ -22,6 +22,9 @@
 [Interface]
 PrivateKey = {{ .ClientPrivateKey }}
 Address = {{ .ClientIp }}/32
+{{- if .DnsServers }}
+DNS = {{ join .DnsServers "," }}
+{{ end }}
 
 # Peer: {{ .PiaRegion.Id }}/{{ .PiaRegion.Name }}
 [Peer]
@@ -29,9 +32,6 @@ PublicKey = {{ .ServerPublicKey }}
 AllowedIPs = 0.0.0.0/0
 Endpoint = {{ .ServerEndpoint }}:{{ .ServerPort }}
 PersistentKeepalive = 25
-{{- if .DnsServers }}
-DNS = {{ join .DnsServers "," }}
-{{ end }}
 
 # ServerVirtualIP: {{ .ServerVirtualIp }}
 # ClientPublicKey: {{ .ClientPublicKey }}
