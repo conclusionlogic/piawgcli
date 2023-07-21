@@ -1,6 +1,6 @@
 {{/*
    piawgcli
-   Copyright (C) 2021  Derek Battams <derek@battams.ca>
+   Copyright (C) 2021-2023  Derek Battams <derek@battams.ca>
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +29,9 @@ PublicKey = {{ .ServerPublicKey }}
 AllowedIPs = 0.0.0.0/0
 Endpoint = {{ .ServerEndpoint }}:{{ .ServerPort }}
 PersistentKeepalive = 25
+{{- if .DnsServers }}
+DNS = {{ join .DnsServers "," }}
+{{ end }}
 
 # ServerVirtualIP: {{ .ServerVirtualIp }}
 # ClientPublicKey: {{ .ClientPublicKey }}
