@@ -29,7 +29,7 @@ DNS = {{ join .DnsServers "," }}
 # Peer: {{ .PiaRegion.Id }}/{{ .PiaRegion.Name }}
 [Peer]
 PublicKey = {{ .ServerPublicKey }}
-AllowedIPs = 0.0.0.0/0
+AllowedIPs = 0.0.0.0/0, ::/0
 Endpoint = {{ .ServerEndpoint }}:{{ .ServerPort }}
 PersistentKeepalive = 25
 
